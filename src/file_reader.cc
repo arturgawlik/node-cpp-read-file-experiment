@@ -3,8 +3,14 @@
 
 using namespace Napi;
 
+file_reader_data fileReaderData;
+
 static uv_buf_t uvBuf;
 static char dataBuf[64];
+
+static uv_fs_t openReq;
+static uv_fs_t readReq;
+static uv_fs_t closeReq;
 
 FileReader::FileReader(const Napi::CallbackInfo &info) : ObjectWrap(info)
 {
@@ -47,40 +53,60 @@ void FileReader::Read(const Napi::CallbackInfo &info)
     napi_status status = napi_get_uv_event_loop(env, &eventLoop);
     NAPI_THROW_IF_FAILED(env, status);
 
-    file_reader_data *fileReaderData = (file_reader_data *)malloc(sizeof(file_reader_data));
-    fileReaderData->callback = Napi::Persistent(callback);
-    fileReaderData->eventLoop = eventLoop;
-    fileReaderData->env = env;
+    // file_reader_data *fileReaderData = (file_reader_data *)malloc(sizeof(file_reader_data));
+    fileReaderData.callback = Napi::Persistent(callback);
+    fileReaderData.eventLoop = eventLoop;
+    fileReaderData.env = env;
 
-    uv_fs_t openReq;
-    openReq.data = fileReaderData;
+    // uv_fs_t *openReq = (uv_fs_t *)malloc(sizeof(uv_fs_t));
+    // openReq.data = fileReaderData;
 
     int fd = uv_fs_open(eventLoop, &openReq, this->_filePath.c_str(), O_RDONLY, 0, on_open);
 }
 
 static void on_open(uv_fs_t *req)
 {
-    const file_reader_data *fileReaderData = (file_reader_data *)req->data;
+    // const file_reader_data *fileReaderData = (file_reader_data *)req->data;
 
     if (req->result < 0)
     {
-        Napi::Error::New(fileReaderData->env, "Error when openning file.").ThrowAsJavaScriptException();
+        Napi::Error::New(fileReaderData.env, "Error when openning file.").ThrowAsJavaScriptException();
         return;
     }
     else
     {
         uvBuf = uv_buf_init(dataBuf, sizeof(dataBuf));
 
-        uv_fs_t readReq;
+        // uv_fs_t readReq;
 
         // TODO: not sure this is correct
-        readReq.data = &fileReaderData;
+        // readReq.data = &fileReaderData;
 
-        uv_fs_read(fileReaderData->eventLoop, &readReq, req->result, &uvBuf, 1, -1, on_read);
+        uv_fs_read(fileReaderData.eventLoop, &readReq, req->result, &uvBuf, 1, -1, on_read);
     }
 }
 
 static void on_read(uv_fs_t *req)
+{
+    // const file_reader_data *fileReaderData = (file_reader_data *)req->data;
+
+    if (req->result < 0)
+    {
+        Napi::Error::New(fileReaderData.env, "Error when reading file.").ThrowAsJavaScriptException();
+        return;
+    }
+    else if (req->result == 0)
+    {
+        uv_fs_t closeReq;
+        uv_fs_close(fileReaderData.eventLoop, &closeReq, req->result, NULL);
+    }
+    else
+    {
+        readData();
+    }
+}
+
+static void readData()
 {
     // TODO
 }
