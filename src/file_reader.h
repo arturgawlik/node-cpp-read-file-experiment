@@ -6,6 +6,8 @@ public:
     FileReader(const Napi::CallbackInfo &);
     void Read(const Napi::CallbackInfo &);
 
+    static Napi::Function GetClass(Napi::Env);
+
 private:
     std::string _filePath;
 };

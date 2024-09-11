@@ -2,7 +2,7 @@
   'targets': [
     {
       'target_name': 'cpp-read-file-experiment-native',
-      'sources': [ 'src/cpp_read_file_experiment.cc' ],
+      'sources': [ 'src/file_reader.cc' ],
       'include_dirs': ["<!@(node -p \"require('node-addon-api').include\")"],
       'dependencies': ["<!(node -p \"require('node-addon-api').gyp\")"],
       'cflags!': [ '-fno-exceptions' ],
