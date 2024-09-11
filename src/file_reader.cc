@@ -31,6 +31,49 @@ FileReader::FileReader(const Napi::CallbackInfo &info) : ObjectWrap(info)
     this->_filePath = info[0].As<Napi::String>().Utf8Value();
 }
 
+static void on_read(uv_fs_t *req)
+{
+    // const file_reader_data *fileReaderData = (file_reader_data *)req->data;
+
+    if (req->result < 0)
+    {
+        Napi::Error::New(fileReaderData->env, "Error when reading file.").ThrowAsJavaScriptException();
+        return;
+    }
+    else if (req->result == 0)
+    {
+        uv_fs_t closeReq;
+        uv_fs_close(fileReaderData->eventLoop, &closeReq, req->result, NULL);
+    }
+    else
+    {
+        // TODO: implement send actual file chunk
+        fileReaderData->callback.MakeCallback(fileReaderData->env.Global(), {Napi::String::New(fileReaderData->env, "file success read...")});
+    }
+}
+
+static void on_open(uv_fs_t *req)
+{
+    // const file_reader_data *fileReaderData = (file_reader_data *)req->data;
+
+    if (req->result < 0)
+    {
+        Napi::Error::New(fileReaderData->env, "Error when openning file.").ThrowAsJavaScriptException();
+        return;
+    }
+    else
+    {
+        uvBuf = uv_buf_init(dataBuf, sizeof(dataBuf));
+
+        // uv_fs_t readReq;
+
+        // TODO: not sure this is correct
+        // readReq.data = &fileReaderData;
+
+        uv_fs_read(fileReaderData->eventLoop, &readReq, req->result, &uvBuf, 1, -1, on_read);
+    }
+}
+
 void FileReader::Read(const Napi::CallbackInfo &info)
 {
     Napi::Env env = info.Env();
@@ -62,49 +105,6 @@ void FileReader::Read(const Napi::CallbackInfo &info)
     // openReq.data = fileReaderData;
 
     int fd = uv_fs_open(eventLoop, &openReq, this->_filePath.c_str(), O_RDONLY, 0, on_open);
-}
-
-static void on_open(uv_fs_t *req)
-{
-    // const file_reader_data *fileReaderData = (file_reader_data *)req->data;
-
-    if (req->result < 0)
-    {
-        Napi::Error::New(fileReaderData->env, "Error when openning file.").ThrowAsJavaScriptException();
-        return;
-    }
-    else
-    {
-        uvBuf = uv_buf_init(dataBuf, sizeof(dataBuf));
-
-        // uv_fs_t readReq;
-
-        // TODO: not sure this is correct
-        // readReq.data = &fileReaderData;
-
-        uv_fs_read(fileReaderData->eventLoop, &readReq, req->result, &uvBuf, 1, -1, on_read);
-    }
-}
-
-static void on_read(uv_fs_t *req)
-{
-    // const file_reader_data *fileReaderData = (file_reader_data *)req->data;
-
-    if (req->result < 0)
-    {
-        Napi::Error::New(fileReaderData->env, "Error when reading file.").ThrowAsJavaScriptException();
-        return;
-    }
-    else if (req->result == 0)
-    {
-        uv_fs_t closeReq;
-        uv_fs_close(fileReaderData->eventLoop, &closeReq, req->result, NULL);
-    }
-    else
-    {
-        // TODO: implement send actual file chunk
-        fileReaderData->callback.MakeCallback(fileReaderData->env.Global(), {Napi::String::New(fileReaderData->env, "file success read...")});
-    }
 }
 
 Napi::Function FileReader::GetClass(Napi::Env env)

@@ -5,8 +5,7 @@
         "node-addon-api": "^1.1.0"
     },
     "scripts": {
-        "pretest": "tsc",
-        "test": "node --napi-modules ./test/test_binding.js"
+        "test": "node ./test/file-reader.js"
     },
     "gypfile": true,
     "name": "cpp-read-file-experiment",
@@ -16,7 +15,6 @@
     "description": "",
     "devDependencies": {
         "@types/bindings": "^1.5.5",
-        "@types/node": "^22.5.4",
-        "typescript": "^5.5.4"
+        "@types/node": "^22.5.4"
     }
 }

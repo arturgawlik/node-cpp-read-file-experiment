@@ -15,6 +15,6 @@ private:
 struct file_reader_data
 {
     Napi::FunctionReference callback;
-    uv_loop_t *eventLoop;
+    uv_loop_s *eventLoop;
     Napi::Env env;
 };
