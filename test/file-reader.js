@@ -4,7 +4,7 @@ try {
     "/home/parallels/programming/node-cpp-read-file-experiment/package.json"
   );
   fileReader.read((res) => {
-    console.log(res);
+    console.log("js callback called with: ", res);
   });
 } catch (err) {
   console.error(err);

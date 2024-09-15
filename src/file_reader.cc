@@ -41,7 +41,7 @@ static void on_read(uv_fs_t *req)
 
     if (req->result < 0)
     {
-        Napi::Error::New(fileReaderData->env, "Error when reading file.").ThrowAsJavaScriptException();
+        Napi::Error::New(fileReaderData->callback.Env(), "Error when reading file.").ThrowAsJavaScriptException();
         return;
     }
     else if (req->result == 0)
@@ -51,8 +51,10 @@ static void on_read(uv_fs_t *req)
     }
     else
     {
+        std::cout << "on_read - before callback\n";
         // TODO: implement send actual file chunk
-        fileReaderData->callback.MakeCallback(fileReaderData->env.Global(), {Napi::String::New(fileReaderData->env, "file success read...")});
+        // Napi::HandleScope scope(fileReaderData->callback.Env());
+        fileReaderData->callback.MakeCallback(fileReaderData->callback.Env().Global(), {Napi::String::New(fileReaderData->callback.Env(), "file success read...")});
     }
     std::cout << "on_read - end\n";
 }
@@ -64,13 +66,13 @@ static void on_open(uv_fs_t *req)
 
     if (req->result < 0)
     {
-        std::cout << "[my-log] eq->result < 0\n";
-        Napi::HandleScope scope(fileReaderData->env); // Create temporary handle scope
-        Napi::String myGlobal = fileReaderData->env.Global().ToString();
-        std::cout << myGlobal;
-        std::cout << '\n';
-        std::cout << "after log\n";
-        Napi::Error::New(fileReaderData->env, "Error when openning file.").ThrowAsJavaScriptException();
+        // std::cout << "[my-log] eq->result < 0\n";
+        // // Napi::HandleScope scope(fileReaderData->env); // Create temporary handle scope
+        // Napi::String myGlobal = fileReaderData->env.Global().ToString();
+        // std::cout << myGlobal;
+        // std::cout << '\n';
+        // std::cout << "after log\n";
+        Napi::Error::New(fileReaderData->callback.Env(), "Error when openning file.").ThrowAsJavaScriptException();
         return;
     }
     else
@@ -114,7 +116,7 @@ void FileReader::Read(const Napi::CallbackInfo &info)
     fileReaderData = (file_reader_data *)malloc(sizeof(file_reader_data));
     fileReaderData->callback = Napi::Persistent(callback);
     fileReaderData->eventLoop = eventLoop;
-    fileReaderData->env = env;
+    // fileReaderData->env = Napi::Persistent(env);
 
     // uv_fs_t *openReq = (uv_fs_t *)malloc(sizewof(uv_fs_t));
     // openReq.data = fileReaderData;
