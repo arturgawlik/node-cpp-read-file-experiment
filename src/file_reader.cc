@@ -39,6 +39,13 @@ static void on_read(uv_fs_t *req)
     std::cout << "on_read - start\n";
     // const file_reader_data *fileReaderData = (file_reader_data *)req->data;
 
+    /*
+        This creates new handle scope.
+        It's necessery when creating some JavaScript accessed objects.
+        In this case we're creating string that will be available from JS
+    */
+    Napi::HandleScope scope(fileReaderData->callback.Env());
+
     if (req->result < 0)
     {
         Napi::Error::New(fileReaderData->callback.Env(), "Error when reading file.").ThrowAsJavaScriptException();
@@ -53,7 +60,6 @@ static void on_read(uv_fs_t *req)
     {
         std::cout << "on_read - before callback\n";
         // TODO: implement send actual file chunk
-        // Napi::HandleScope scope(fileReaderData->callback.Env());
         fileReaderData->callback.MakeCallback(fileReaderData->callback.Env().Global(), {Napi::String::New(fileReaderData->callback.Env(), "file success read...")});
     }
     std::cout << "on_read - end\n";
