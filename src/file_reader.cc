@@ -18,14 +18,15 @@ static Napi::HandleScope create_handle_scope(Napi::Env env)
     /*
         This creates new handle scope.
         It's necessery when creating some JavaScript accessed objects.
-        For example creating string that will be available from JS
+        For example creating string that will be available from JS.
+        HandleScope need's to be available on stack (it's need to be returned from this function) otherwise it will be available for Scope's.
     */
     return Napi::HandleScope(env);
 }
 
 FileReader::FileReader(const Napi::CallbackInfo &info) : ObjectWrap(info)
 {
-    std::cout << "FileReader:FileReader - start\n";
+    // std::cout << "FileReader:FileReader - start\n";
     Napi::Env env = info.Env();
 
     if (info.Length() < 1)
@@ -41,13 +42,12 @@ FileReader::FileReader(const Napi::CallbackInfo &info) : ObjectWrap(info)
     }
 
     this->_filePath = info[0].As<Napi::String>().Utf8Value();
-    std::cout << "FileReader:FileReader - end\n";
+    // std::cout << "FileReader:FileReader - end\n";
 }
 
 static void on_read(uv_fs_t *req)
 {
-    std::cout << "on_read - start\n";
-
+    // std::cout << "on_read - start\n";
     Napi::HandleScope scope = create_handle_scope(fileReaderData->callback.Env());
 
     if (req->result < 0)
@@ -62,17 +62,18 @@ static void on_read(uv_fs_t *req)
     }
     else
     {
-        std::cout << "on_read - before callback\n";
-        // TODO: implement send actual file chunk
-        fileReaderData->callback.MakeCallback(fileReaderData->callback.Env().Global(), {Napi::String::New(fileReaderData->callback.Env(), "file success read...")});
+        // std::cout << "on_read - before callback\n";
+        fileReaderData->callback.MakeCallback(fileReaderData->callback.Env().Global(), {Napi::String::New(fileReaderData->callback.Env(), dataBuf)});
+
+        // schedule next chunk read
+        uv_fs_read(fileReaderData->eventLoop, &readReq, openReq.result, &uvBuf, 1, -1, on_read);
     }
-    std::cout << "on_read - end\n";
+    // std::cout << "on_read - end\n";
 }
 
 static void on_open(uv_fs_t *req)
 {
-    std::cout << "on_open - start\n";
-
+    // std::cout << "on_open - start\n";
     Napi::HandleScope scope = create_handle_scope(fileReaderData->callback.Env());
 
     if (req->result < 0)
@@ -82,17 +83,16 @@ static void on_open(uv_fs_t *req)
     }
     else
     {
-        std::cout << "[my-log] else\n";
         uvBuf = uv_buf_init(dataBuf, sizeof(dataBuf));
 
         uv_fs_read(fileReaderData->eventLoop, &readReq, req->result, &uvBuf, 1, -1, on_read);
     }
-    std::cout << "on_open - end\n";
+    // std::cout << "on_open - end\n";
 }
 
 void FileReader::Read(const Napi::CallbackInfo &info)
 {
-    std::cout << "FileReader:Read - start\n";
+    // std::cout << "FileReader:Read - start\n";
     Napi::Env env = info.Env();
 
     if (info.Length() < 1)
@@ -118,7 +118,7 @@ void FileReader::Read(const Napi::CallbackInfo &info)
     fileReaderData->eventLoop = eventLoop;
 
     int fd = uv_fs_open(eventLoop, &openReq, this->_filePath.c_str(), O_RDONLY, 0, on_open);
-    std::cout << "FileReader:Read - end\n";
+    // std::cout << "FileReader:Read - end\n";
 }
 
 Napi::Function FileReader::GetClass(Napi::Env env)
@@ -130,9 +130,8 @@ Napi::Function FileReader::GetClass(Napi::Env env)
 
 Napi::Object Init(Napi::Env env, Napi::Object exports)
 {
-    std::cout << "before first string\n";
+    // std::cout << "before first string\n";
     Napi::String name = Napi::String::New(env, "FileReader");
-    std::cout << "after first string\n";
     exports.Set(name, FileReader::GetClass(env));
     return exports;
 }
